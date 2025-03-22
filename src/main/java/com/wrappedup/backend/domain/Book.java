@@ -2,25 +2,30 @@ package com.wrappedup.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "books")
+@Table(name = "books", 
+       indexes = {
+           @Index(name = "idx_open_library_key", columnList = "open_library_key", unique = true)
+       })
 @Getter
 @Setter
 @NoArgsConstructor
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Book {
     @Id
-    @GeneratedValue
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @Column(name = "id", columnDefinition = "BINARY(16)")
     private UUID id;
 
     @NotBlank
@@ -46,7 +51,6 @@ public class Book {
     private List<String> authorAlternativeNames;
 
     @NotNull
-    @Min(1000)
     @Column(name = "first_publish_year", nullable = false)
     private Integer firstPublishYear;
 
@@ -228,6 +232,9 @@ public class Book {
     @Column(name = "ddc_sort")
     private String ddcSort;
 
+    @Version
+    private Long version;
+
     public Book(
             String title,
             String author,
@@ -243,4 +250,5 @@ public class Book {
         this.coverUrl = coverUrl;
         this.openLibraryKey = openLibraryKey;
     }
+
 } 

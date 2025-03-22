@@ -1,2 +1,0 @@
-ALTER TABLE books
-ADD COLUMN first_publish_year INT NOT NULL DEFAULT 2000; 

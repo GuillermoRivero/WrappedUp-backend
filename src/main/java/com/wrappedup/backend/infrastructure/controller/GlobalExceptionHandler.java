@@ -8,6 +8,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.hibernate.StaleObjectStateException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +20,8 @@ import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex) {
@@ -65,5 +72,13 @@ public class GlobalExceptionHandler {
         Map<String, String> body = new HashMap<>();
         body.put("message", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred");
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler({DataIntegrityViolationException.class, ObjectOptimisticLockingFailureException.class, StaleObjectStateException.class})
+    public ResponseEntity<Object> handleDataIntegrityAndConcurrencyExceptions(Exception ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("message", "A database concurrency error occurred. Please try again.");
+        logger.error("Database concurrency error: ", ex);
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
 } 

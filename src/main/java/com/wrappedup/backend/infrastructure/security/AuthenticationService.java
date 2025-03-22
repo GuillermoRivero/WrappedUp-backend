@@ -1,14 +1,15 @@
 package com.wrappedup.backend.infrastructure.security;
 
-import com.wrappedup.backend.domain.Role;
 import com.wrappedup.backend.domain.User;
 import com.wrappedup.backend.domain.port.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -30,12 +31,13 @@ public class AuthenticationService {
         return AuthenticationResponse.of(
             token,
             user.getId(),
+            user.getRealUsername(),
             user.getEmail(),
             user.getRole()
         );
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+    public AuthenticationResponse authenticate(AuthenticationRequest request) {        
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 request.email(),
@@ -43,7 +45,7 @@ public class AuthenticationService {
             )
         );
         
-        var user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmail(request.email())
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
             
         var token = jwtService.generateToken(user);
@@ -51,6 +53,7 @@ public class AuthenticationService {
         return AuthenticationResponse.of(
             token,
             user.getId(),
+            user.getRealUsername(),
             user.getEmail(),
             user.getRole()
         );
@@ -62,6 +65,7 @@ public class AuthenticationService {
         return AuthenticationResponse.of(
             token,
             user.getId(),
+            user.getRealUsername(),
             user.getEmail(),
             user.getRole()
         );

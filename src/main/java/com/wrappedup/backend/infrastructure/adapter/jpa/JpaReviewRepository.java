@@ -29,4 +29,9 @@ public class JpaReviewRepository implements ReviewRepository {
     public Optional<Review> findById(UUID id) {
         return springDataReviewRepository.findById(id);
     }
+    
+    @Override
+    public Optional<Review> findByUserIdAndBookId(UUID userId, UUID bookId) {
+        return springDataReviewRepository.findByUserIdAndBookId(userId, bookId);
+    }
 } 

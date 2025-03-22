@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.util.Collection;
 import java.util.List;
@@ -22,7 +23,9 @@ import java.util.UUID;
 @NoArgsConstructor
 public class User implements UserDetails {
     @Id
-    @GeneratedValue
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @Column(name = "id", columnDefinition = "BINARY(16)")
     private UUID id;
 
     @Column(nullable = false, unique = true)
@@ -40,6 +43,9 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private boolean enabled = true;
+    
+    @Version
+    private Long version;
 
     public User(String username, String email, String password) {
         this.username = username;
@@ -76,6 +82,14 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
+        return email;
+    }
+
+    public String getRealUsername() {
+        return username;
+    }
+
+    public String getEmail() {
         return email;
     }
 } 

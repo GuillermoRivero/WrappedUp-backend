@@ -3,6 +3,8 @@ package com.wrappedup.backend.infrastructure.adapter.jpa;
 import com.wrappedup.backend.domain.Book;
 import com.wrappedup.backend.domain.port.BookRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,7 +19,34 @@ public class JpaBookRepository implements BookRepository {
 
     @Override
     public Book save(Book book) {
-        return springDataBookRepository.save(book);
+        try {
+            return springDataBookRepository.save(book);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            if (book.getId() != null) {
+                Optional<Book> existingBook = springDataBookRepository.findById(book.getId());
+                if (existingBook.isPresent()) {
+                    return existingBook.get();
+                }
+            }
+            
+            if (book.getOpenLibraryKey() != null && !book.getOpenLibraryKey().isEmpty()) {
+                Optional<Book> existingBook = springDataBookRepository.findByOpenLibraryKey(book.getOpenLibraryKey());
+                if (existingBook.isPresent()) {
+                    return existingBook.get();
+                }
+            }
+            
+            throw e;
+        } catch (ObjectOptimisticLockingFailureException e) {
+            if (book.getId() != null) {
+                Optional<Book> existingBook = springDataBookRepository.findById(book.getId());
+                if (existingBook.isPresent()) {
+                    return existingBook.get();
+                }
+            }
+            
+            throw e;
+        }
     }
 
     @Override
