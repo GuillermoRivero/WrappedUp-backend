@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/authenticate").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/wishlist/public/user/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/profiles/public/*").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/status").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/books").authenticated()
