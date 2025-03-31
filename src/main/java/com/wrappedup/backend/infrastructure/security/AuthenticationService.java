@@ -35,19 +35,16 @@ public class AuthenticationService {
         
         user = userRepository.save(user);
         
-        // Create default profile
         UserProfile profile = new UserProfile(user);
-        profile.setFullName(request.username()); // Default to username
-        profile.setBio(""); // Empty bio
-        profile.setFavoriteGenres(new ArrayList<>()); // Empty genres
-        profile.setReadingGoal(12); // Default: 1 book per month
-        profile.setPreferredLanguage("English"); // Default language
-        profile.setPublicProfile(true); // Public by default
-        profile.setSocialLinks(new HashMap<>()); // Empty social links
+        profile.setFullName(request.username());
+        profile.setBio("");
+        profile.setFavoriteGenres(new ArrayList<>());
+        profile.setReadingGoal(12);
+        profile.setPreferredLanguage("English");
+        profile.setPublicProfile(true); 
+        profile.setSocialLinks(new HashMap<>());
         
         userProfileRepository.save(profile);
-        
-        log.info("Created default profile for user: {}", user.getId());
         
         var token = jwtService.generateToken(user);
         
@@ -60,26 +57,54 @@ public class AuthenticationService {
         );
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {        
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                request.email(),
-                request.password()
-            )
-        );
-        
-        User user = userRepository.findByEmail(request.email())
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+        try {
+            if (request.email() == null || request.email().isEmpty()) {
+                log.warn("Authentication failed: Email is required");
+                throw new IllegalArgumentException("Email is required");
+            }
             
-        var token = jwtService.generateToken(user);
-        
-        return AuthenticationResponse.of(
-            token,
-            user.getId(),
-            user.getRealUsername(),
-            user.getEmail(),
-            user.getRole()
-        );
+            if (request.password() == null || request.password().isEmpty()) {
+                log.warn("Authentication failed: Password is required");
+                throw new IllegalArgumentException("Password is required");
+            }
+            
+            var userOptional = userRepository.findByEmail(request.email());
+            if (userOptional.isEmpty()) {
+                log.warn("Authentication failed: User with email {} not found", request.email());
+                throw new IllegalArgumentException("User not found with email: " + request.email());
+            }
+            
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    request.email(),
+                    request.password()
+                )
+            );
+            
+            User user = userOptional.get();
+            var token = jwtService.generateToken(user);
+                        
+            return AuthenticationResponse.of(
+                token,
+                user.getId(),
+                user.getRealUsername(),
+                user.getEmail(),
+                user.getRole()
+            );
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            log.warn("Authentication failed: Invalid credentials for email: {}", request.email());
+            throw new IllegalArgumentException("Invalid email or password");
+        } catch (org.springframework.security.authentication.LockedException e) {
+            log.warn("Authentication failed: Account is locked for email: {}", request.email());
+            throw new IllegalArgumentException("Your account has been locked. Please contact support.");
+        } catch (org.springframework.security.authentication.DisabledException e) {
+            log.warn("Authentication failed: Account is disabled for email: {}", request.email());
+            throw new IllegalArgumentException("Your account has been disabled. Please contact support.");
+        } catch (Exception e) {
+            log.error("Authentication failed with unexpected error for email: {}", request.email(), e);
+            throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
+        }
     }
 
     public AuthenticationResponse getCurrentUser(User user) {

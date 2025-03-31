@@ -1,6 +1,5 @@
 package com.wrappedup.backend.infrastructure.security;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,37 +16,48 @@ import org.springframework.http.HttpStatus;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthFilter,
+            AuthenticationProvider authenticationProvider) {
+        this.jwtAuthFilter = jwtAuthFilter;
+        this.authenticationProvider = authenticationProvider;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configure(http))
-                .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/authenticate").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/wishlist/public/user/*").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/profiles/public/*").permitAll()
-                .requestMatchers("/error").permitAll()
-                .requestMatchers("/status").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/books").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/books/**").authenticated()
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-            )
-            .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
+                .csrf(csrf -> {
+                    csrf.disable();
+                })
+                .cors(cors -> {
+                    cors.disable();
+                })
+                .authorizeHttpRequests(auth -> {
+                    auth
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/authenticate").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/api/wishlist/public/user/*").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/profiles/public/*").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/books").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/api/books/**").authenticated()
+                    .requestMatchers("/error").permitAll()
+                    .requestMatchers("/status").permitAll()
+                    .anyRequest().authenticated();
+                })
+                .sessionManagement(session -> {
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                })
+                .exceptionHandling(exceptions -> {
+                    exceptions.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+                })
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 } 
