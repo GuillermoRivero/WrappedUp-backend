@@ -36,7 +36,7 @@ public class AuthenticationService {
         user = userRepository.save(user);
         
         UserProfile profile = new UserProfile(user);
-        profile.setFullName(request.username());
+        profile.setFullName(null);
         profile.setBio("");
         profile.setFavoriteGenres(new ArrayList<>());
         profile.setReadingGoal(12);

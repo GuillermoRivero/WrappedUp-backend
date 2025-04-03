@@ -16,4 +16,11 @@ server.port=${SERVER_PORT:8080}
 
 # Logging Configuration
 logging.level.org.springframework.security=INFO
-logging.level.com.wrappedup=DEBUG 
+logging.level.com.wrappedup=DEBUG
+
+# CORS Configuration
+cors.allowed-origins=${CORS_ALLOWED_ORIGINS:https://wrappedup.duckdns.org,http://wrappedup.duckdns.org,https://wrappedupdev.duckdns.org,http://wrappedupdev.duckdns.org,http://localhost:8080,http://localhost:8081,http://localhost:3000}
+cors.allowed-methods=${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD}
+cors.allowed-headers=${CORS_ALLOWED_HEADERS:Authorization,Content-Type,Accept,Origin,X-Requested-With,Access-Control-Request-Method,Access-Control-Request-Headers,Cache-Control,User-Agent,Accept-Encoding,Accept-Language,Referer,Connection,X-XSRF-TOKEN,X-CSRF-TOKEN}
+cors.exposed-headers=${CORS_EXPOSED_HEADERS:Authorization,Content-Type,Accept,Origin,Access-Control-Allow-Origin,Access-Control-Allow-Credentials,Access-Control-Allow-Headers,Access-Control-Allow-Methods,X-Total-Count,Content-Disposition}
+cors.max-age=${CORS_MAX_AGE:7200} 
