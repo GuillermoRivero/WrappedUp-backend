@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -19,49 +20,38 @@ public class CorsFilter implements Filter {
     
     private static final Logger logger = LoggerFactory.getLogger(CorsFilter.class);
     
-    private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
-        "https://wrappedup.duckdns.org",
-        "http://wrappedup.duckdns.org",
-        "http://localhost:8080",
-        "http://localhost:8081"
-    );
+    @Value("${cors.allowed-origins:http://localhost:8080,http://localhost:3000}")
+    private String allowedOriginsString;
     
-    private static final List<String> ALLOWED_METHODS = Arrays.asList(
-        "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
-    );
+    private List<String> ALLOWED_ORIGINS;
     
-    private static final List<String> ALLOWED_HEADERS = Arrays.asList(
-        "Authorization", 
-        "Content-Type", 
-        "Accept", 
-        "Origin", 
-        "X-Requested-With", 
-        "Access-Control-Request-Method", 
-        "Access-Control-Request-Headers",
-        "Cache-Control",
-        "User-Agent",
-        "Accept-Encoding",
-        "Accept-Language",
-        "Referer",
-        "Connection",
-        "X-XSRF-TOKEN",
-        "X-CSRF-TOKEN"
-    );
+    @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD}")
+    private String allowedMethodsString;
     
-    private static final List<String> EXPOSED_HEADERS = Arrays.asList(
-        "Authorization", 
-        "Content-Type", 
-        "Accept", 
-        "Origin",
-        "Access-Control-Allow-Origin",
-        "Access-Control-Allow-Credentials",
-        "Access-Control-Allow-Headers",
-        "Access-Control-Allow-Methods",
-        "X-Total-Count",
-        "Content-Disposition"
-    );
+    private List<String> ALLOWED_METHODS;
     
-    private static final long MAX_AGE = 7200L; // Extended to 2 hours for mobile
+    @Value("${cors.allowed-headers:Authorization,Content-Type,Accept,Origin,X-Requested-With,Access-Control-Request-Method,Access-Control-Request-Headers,Cache-Control,User-Agent,Accept-Encoding,Accept-Language,Referer,Connection,X-XSRF-TOKEN,X-CSRF-TOKEN}")
+    private String allowedHeadersString;
+    
+    private List<String> ALLOWED_HEADERS;
+    
+    @Value("${cors.exposed-headers:Authorization,Content-Type,Accept,Origin,Access-Control-Allow-Origin,Access-Control-Allow-Credentials,Access-Control-Allow-Headers,Access-Control-Allow-Methods,X-Total-Count,Content-Disposition}")
+    private String exposedHeadersString;
+    
+    private List<String> EXPOSED_HEADERS;
+    
+    @Value("${cors.max-age:7200}")
+    private long MAX_AGE;
+    
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        ALLOWED_ORIGINS = Arrays.asList(allowedOriginsString.split(","));
+        ALLOWED_METHODS = Arrays.asList(allowedMethodsString.split(","));
+        ALLOWED_HEADERS = Arrays.asList(allowedHeadersString.split(","));
+        EXPOSED_HEADERS = Arrays.asList(exposedHeadersString.split(","));
+        
+        logger.info("CORS Filter configured with the following origins: {}", ALLOWED_ORIGINS);
+    }
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
