@@ -20,7 +20,7 @@ public class CorsFilter implements Filter {
     
     private static final Logger logger = LoggerFactory.getLogger(CorsFilter.class);
     
-    @Value("${cors.allowed-origins:http://localhost:8080,http://localhost:3000}")
+    @Value("${cors.allowed-origins:http://localhost:8080,http://localhost:3000,https://wrappedupdev.duckdns.org,http://wrappedupdev.duckdns.org}")
     private String allowedOriginsString;
     
     private List<String> ALLOWED_ORIGINS;
@@ -51,6 +51,9 @@ public class CorsFilter implements Filter {
         EXPOSED_HEADERS = Arrays.asList(exposedHeadersString.split(","));
         
         logger.info("CORS Filter configured with the following origins: {}", ALLOWED_ORIGINS);
+        logger.info("CORS Filter configured with the following methods: {}", ALLOWED_METHODS);
+        logger.info("CORS Filter configured with the following headers: {}", ALLOWED_HEADERS);
+        logger.info("CORS Filter configured with the following exposed headers: {}", EXPOSED_HEADERS);
     }
 
     @Override
@@ -63,23 +66,45 @@ public class CorsFilter implements Filter {
         String origin = request.getHeader("Origin");
         String method = request.getMethod();
         String userAgent = request.getHeader("User-Agent");
+        String requestURI = request.getRequestURI();
         
+        logger.debug("CORS Filter processing request: {} {} from origin: {}", method, requestURI, origin);
+        logger.debug("Request headers: Host={}, User-Agent={}", request.getHeader("Host"), userAgent);
         
         boolean isMobileRequest = userAgent != null && 
             (userAgent.contains("Mobile") || userAgent.contains("Android") || userAgent.contains("iPhone"));
 
+        // For development environment, allow all origins
+        boolean isDevelopment = true; // Set to true for development mode
+        
         if (origin == null && isMobileRequest) {
             String referer = request.getHeader("Referer");
+            logger.debug("Mobile request with null origin. Referer: {}", referer);
+            
             if (referer != null) {
                 origin = referer;
+                logger.debug("Using referer as origin: {}", origin);
             } else {
                 response.setHeader("Access-Control-Allow-Origin", "*");
                 response.setHeader("Access-Control-Allow-Credentials", "false");
+                logger.debug("Set CORS headers for null origin mobile request without referer");
             }
         } else if (origin != null) {
-            if (ALLOWED_ORIGINS.contains(origin) || (isMobileRequest && (origin.startsWith("capacitor://") || origin.startsWith("ionic://")))) {
+            boolean isAllowed = ALLOWED_ORIGINS.contains(origin) || 
+                               (isMobileRequest && (origin.startsWith("capacitor://") || origin.startsWith("ionic://"))) ||
+                               isDevelopment;
+            
+            logger.debug("Origin: {} is {} in allowed list: {}", 
+                        origin, 
+                        isAllowed ? "present" : "not present", 
+                        ALLOWED_ORIGINS);
+            
+            if (isAllowed) {
                 response.setHeader("Access-Control-Allow-Origin", origin);
                 response.setHeader("Access-Control-Allow-Credentials", "true");
+                logger.debug("Set Access-Control-Allow-Origin: {}", origin);
+            } else {
+                logger.warn("Origin: {} is not allowed", origin);
             }
             
             String allowedMethodsStr = String.join(", ", ALLOWED_METHODS);
@@ -93,15 +118,35 @@ public class CorsFilter implements Filter {
             
             response.setHeader("Access-Control-Max-Age", String.valueOf(MAX_AGE));
             
+            // Always add Vary header
+            response.setHeader("Vary", "Origin");
+            
             if (isMobileRequest) {
-                response.setHeader("Vary", "Origin");
                 response.setHeader("Timing-Allow-Origin", origin);
             }
         } else {
-            logger.warn("No Origin header in request");
+            logger.warn("No Origin header in request to: {}", requestURI);
+            // For development, set permissive CORS headers even for null origin
+            if (isDevelopment) {
+                response.setHeader("Access-Control-Allow-Origin", "*");
+                response.setHeader("Access-Control-Allow-Credentials", "true");
+                
+                String allowedMethodsStr = String.join(", ", ALLOWED_METHODS);
+                response.setHeader("Access-Control-Allow-Methods", allowedMethodsStr);
+                
+                String allowedHeadersStr = String.join(", ", ALLOWED_HEADERS);
+                response.setHeader("Access-Control-Allow-Headers", allowedHeadersStr);
+                
+                String exposedHeadersStr = String.join(", ", EXPOSED_HEADERS);
+                response.setHeader("Access-Control-Expose-Headers", exposedHeadersStr);
+                
+                response.setHeader("Access-Control-Max-Age", String.valueOf(MAX_AGE));
+                logger.debug("Set permissive CORS headers for null origin request in development mode");
+            }
         }
 
         if ("OPTIONS".equalsIgnoreCase(method)) {
+            logger.debug("Responding OK to OPTIONS request");
             response.setStatus(HttpServletResponse.SC_OK);
             return; 
         } else {

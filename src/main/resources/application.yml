@@ -1,0 +1,14 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        # Disable optimistic locking completely
+        jdbc:
+          batch_size: 30
+        order_inserts: true
+        order_updates: true
+        event:
+          merge:
+            entity_copy_observer: allow
+        connection:
+          handling_mode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_STATEMENT 
