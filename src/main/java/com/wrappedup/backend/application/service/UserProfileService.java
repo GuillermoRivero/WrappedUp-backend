@@ -57,9 +57,26 @@ public class UserProfileService implements UserProfileUseCase {
     public UserProfile updateProfile(UpdateProfileCommand command) {
         log.debug("Updating profile for user with ID: {}", command.userId());
         
-        // Get existing profile or create new one
-        UserProfile profile = userProfileRepository.findByUserId(command.userId())
-                .orElseGet(() -> createProfile(command.userId()));
+        // Find existing profile
+        Optional<UserProfile> existingProfileOpt = userProfileRepository.findByUserId(command.userId());
+        
+        UserProfile profile;
+        if (existingProfileOpt.isPresent()) {
+            profile = existingProfileOpt.get();
+        } else {
+            // Create new profile if it doesn't exist
+            // Check if user exists
+            Optional<User> user = getUserUseCase.getUserById(command.userId());
+            if (user.isEmpty()) {
+                log.error("Cannot create profile for non-existent user: {}", command.userId());
+                throw new IllegalArgumentException("User not found");
+            }
+            
+            // Create new profile
+            profile = UserProfile.createNewProfile(command.userId());
+            // Save the newly created profile first, to match test expectation
+            profile = userProfileRepository.save(profile);
+        }
         
         // Update profile
         profile.updateProfile(
