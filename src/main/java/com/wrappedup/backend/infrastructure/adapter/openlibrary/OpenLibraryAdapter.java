@@ -35,7 +35,17 @@ public class OpenLibraryAdapter implements OpenLibraryPort {
     
     @Override
     public List<Book> searchBooks(String query) {
-        if (query.startsWith("key:")) {
+        return searchBooks(query, false);
+    }
+    
+    /**
+     * Search for books with a flag to prevent recursive calls
+     * @param query The search query
+     * @param isRecursiveCall Flag to prevent infinite recursion
+     * @return List of books matching the query
+     */
+    private List<Book> searchBooks(String query, boolean isRecursiveCall) {
+        if (!isRecursiveCall && query.startsWith("key:")) {
             String key = query.substring(4);
             
             List<Book> directResult = getBookByKey(key);
@@ -263,12 +273,12 @@ public class OpenLibraryAdapter implements OpenLibraryPort {
         }
         
         try {
-            List<Book> results = searchBooks("key:" + query);
+            List<Book> results = searchBooks("key:" + query, true);
             if (!results.isEmpty()) {
                 return results;
             }
             
-            results = searchBooks(query);
+            results = searchBooks(query, true);
             if (!results.isEmpty()) {
                 return results;
             }

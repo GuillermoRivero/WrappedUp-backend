@@ -53,8 +53,8 @@ public class CreateBookService implements CreateBookUseCase {
             log.info("Book created successfully with ID: {}", savedBook.getId());
             
             return savedBook.getId();
-        } catch (BookPersistenceException e) {
-            // Re-throw domain exceptions directly
+        } catch (BookPersistenceException | IllegalArgumentException e) {
+            // Re-throw domain exceptions and IllegalArgumentException directly
             throw e;
         } catch (Exception e) {
             // Log and wrap all other exceptions
